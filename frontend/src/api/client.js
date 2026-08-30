@@ -31,14 +31,20 @@ export async function fetchAdoptionApplications() {
   return res.json();
 }
 
+/**
+ * Submit adoption application to POST /api/adopt with email dispatch
+ */
 export async function submitAdoptionApplication(data) {
-  const res = await fetch(`${API_BASE}/adoption/apply`, {
+  const res = await fetch(`${API_BASE}/adopt`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  if (!res.ok) throw new Error('Failed to submit adoption application');
-  return res.json();
+  const json = await res.json();
+  if (!res.ok || json.success === false) {
+    throw new Error(json.message || 'Failed to submit adoption application');
+  }
+  return json;
 }
 
 export async function fetchPetCareGuides(searchQuery = '', category = 'All') {

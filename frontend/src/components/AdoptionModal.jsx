@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Heart, Send, CheckCircle2, Sparkles } from 'lucide-react';
+import { X, Heart, Send, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 import { submitAdoptionApplication } from '../api/client';
 
 export default function AdoptionModal({ isOpen, onClose, pet }) {
@@ -12,6 +12,7 @@ export default function AdoptionModal({ isOpen, onClose, pet }) {
     message: ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [success, setSuccess] = useState(false);
   const [submittedPetName, setSubmittedPetName] = useState('');
 
@@ -19,20 +20,33 @@ export default function AdoptionModal({ isOpen, onClose, pet }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
     setSubmitting(true);
+
     try {
       const response = await submitAdoptionApplication({
         petId: pet.id,
-        ...formData
+        petName: pet.name,
+        applicantName: formData.applicantName,
+        email: formData.email,
+        phone: formData.phone,
+        housingType: formData.housingType,
+        hasOtherPets: formData.hasOtherPets,
+        message: formData.message
       });
-      setSubmittedPetName(pet.name);
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        onClose();
-      }, 4000);
+
+      if (response && response.success !== false) {
+        setSubmittedPetName(pet.name);
+        setSuccess(true);
+        setTimeout(() => {
+          setSuccess(false);
+          onClose();
+        }, 4000);
+      } else {
+        setErrorMessage(response.message || 'Failed to submit adoption request. Please check your details.');
+      }
     } catch (err) {
-      alert('Error submitting application: ' + err.message);
+      setErrorMessage(err.message || 'Unable to submit application. Please verify your connection.');
     } finally {
       setSubmitting(false);
     }
@@ -61,6 +75,26 @@ export default function AdoptionModal({ isOpen, onClose, pet }) {
             <X size={20} color="#5C677D" />
           </button>
         </div>
+
+        {/* Error Alert Message */}
+        {errorMessage && (
+          <div style={{
+            background: '#FEE2E2',
+            border: '2px solid #EF4444',
+            color: '#991B1B',
+            padding: '12px 16px',
+            borderRadius: '16px',
+            marginBottom: '16px',
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
+            <AlertCircle size={20} color="#DC2626" style={{ flexShrink: 0 }} />
+            <span>{errorMessage}</span>
+          </div>
+        )}
 
         {/* Website Success Confirmation Message */}
         {success ? (
@@ -196,7 +230,7 @@ export default function AdoptionModal({ isOpen, onClose, pet }) {
               </button>
               <button type="submit" className="btn-pastel-mint" disabled={submitting} style={{ flex: 2, justifyContent: 'center' }}>
                 <Send size={18} />
-                <span>{submitting ? 'Submitting...' : 'Submit Adoption Application'}</span>
+                <span>{submitting ? 'Submitting & Sending Email...' : 'Submit Adoption Application'}</span>
               </button>
             </div>
 
