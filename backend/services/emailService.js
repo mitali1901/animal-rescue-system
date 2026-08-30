@@ -3,15 +3,18 @@ import dotenv from 'dotenv';
 
 /**
  * Configure and return Nodemailer transporter
- * Strictly uses EMAIL_USER + EMAIL_PASS (Gmail App Password) or SMTP settings
+ * Supports Gmail App Password (EMAIL_USER + EMAIL_PASS) or custom SMTP credentials
  */
 export async function getTransporter() {
-  dotenv.config(); // Reload .env values
+  dotenv.config();
 
-  const emailUser = process.env.EMAIL_USER;
-  const emailPass = process.env.EMAIL_PASS;
+  const emailUser = (process.env.EMAIL_USER || '').trim();
+  const emailPass = (process.env.EMAIL_PASS || '').trim().replace(/\s+/g, '');
+  const smtpHost = (process.env.SMTP_HOST || '').trim();
+  const smtpUser = (process.env.SMTP_USER || '').trim();
+  const smtpPass = (process.env.SMTP_PASS || '').trim();
 
-  // Check if real Gmail credentials are provided
+  // 1. Gmail configuration via EMAIL_USER & EMAIL_PASS
   if (
     emailUser &&
     emailPass &&
@@ -22,59 +25,75 @@ export async function getTransporter() {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: emailUser.trim(),
-        pass: emailPass.trim().replace(/\s+/g, '') // remove spaces from 16-char app password if any
+        user: emailUser,
+        pass: emailPass
       }
     });
 
-    // Verify SMTP connection
-    await transporter.verify();
-    console.log(`✅ Nodemailer connected successfully to Gmail account: ${emailUser}`);
-    return transporter;
+    try {
+      await transporter.verify();
+      console.log(`✅ Nodemailer connected successfully to Gmail: ${emailUser}`);
+      return transporter;
+    } catch (authErr) {
+      throw new Error(
+        `Gmail Authentication Failed for ${emailUser} (${authErr.message}). Ensure you are using a 16-character Google App Password with 2-Step Verification enabled.`
+      );
+    }
   }
 
-  // Check if custom SMTP is provided
+  // 2. Custom SMTP provider configuration (Sendgrid, Mailgun, Brevo, Outlook, etc.)
   if (
-    process.env.SMTP_USER &&
-    process.env.SMTP_PASS &&
-    process.env.SMTP_USER !== 'demo.rescue.volunteer@ethereal.email' &&
-    process.env.SMTP_USER !== 'your_email@gmail.com'
+    smtpHost &&
+    (smtpUser || emailUser) &&
+    (smtpPass || emailPass) &&
+    smtpUser !== 'your_email@gmail.com'
   ) {
+    const activeUser = smtpUser || emailUser;
+    const activePass = smtpPass || emailPass;
+
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      host: smtpHost,
       port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_SECURE === 'true',
+      secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
       auth: {
-        user: process.env.SMTP_USER.trim(),
-        pass: process.env.SMTP_PASS.trim()
+        user: activeUser,
+        pass: activePass
       }
     });
-    await transporter.verify();
-    return transporter;
+
+    try {
+      await transporter.verify();
+      console.log(`✅ Nodemailer connected successfully to SMTP Host ${smtpHost} (${activeUser})`);
+      return transporter;
+    } catch (authErr) {
+      throw new Error(`SMTP connection failed for ${smtpHost}: ${authErr.message}`);
+    }
   }
 
-  // If credentials are still placeholders, throw explicit error so the user knows
+  // Missing credentials
   throw new Error(
-    'Real Gmail credentials are not configured. Please open backend/.env and replace placeholders with your real EMAIL_USER, EMAIL_PASS (Gmail App Password), and ADMIN_EMAIL.'
+    'Sender email credentials are missing. Please open backend/.env and configure EMAIL_USER and EMAIL_PASS (Gmail 16-character App Password).'
   );
 }
 
 /**
  * Send Adoption Request Email to ADMIN_EMAIL using Nodemailer
- * @param {Object} data - Contains petName, applicantName, phone, email, housingType, hasOtherPets, message
+ * @param {Object} data - Contains petName, applicantName, phone, email, housingType, hasOtherPets, message, petBreed, petAge, id
  */
 export async function sendAdoptionRequestEmail(data) {
   dotenv.config();
 
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (!adminEmail || adminEmail === 'your_admin_email@gmail.com') {
-    throw new Error('ADMIN_EMAIL is not configured in backend/.env. Please set your real receiving email address.');
+  const adminEmail = (process.env.ADMIN_EMAIL || '').trim();
+  if (!adminEmail || adminEmail === 'your_admin_email@gmail.com' || adminEmail === 'MY_EMAIL_ADDRESS') {
+    throw new Error(
+      'ADMIN_EMAIL is not configured in backend/.env. Please open backend/.env and set your real receiving email address (e.g. ADMIN_EMAIL=myemail@gmail.com).'
+    );
   }
 
   const mailer = await getTransporter();
-  const senderEmail = process.env.EMAIL_USER;
-
-  const subject = `New Adoption Request: ${data.petName || 'Rescued Pet'}`;
+  const senderEmail = process.env.EMAIL_USER || process.env.SMTP_USER || 'adoptions@pawsrescue.org';
+  const petName = data.petName || 'Rescued Pet';
+  const subject = `New Adoption Application — ${petName}`;
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -83,36 +102,49 @@ export async function sendAdoptionRequestEmail(data) {
       <meta charset="utf-8">
       <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #FAF6F0; margin: 0; padding: 24px; color: #2B2D42; }
-        .card { background: #FFFFFF; max-width: 600px; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.08); border: 2px solid #B7E4C7; }
-        .header { background: linear-gradient(135deg, #D8F3DC 0%, #B7E4C7 100%); padding: 30px 24px; text-align: center; }
-        .header h1 { margin: 0; color: #1B4332; font-size: 24px; }
+        .card { background: #FFFFFF; max-width: 620px; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.08); border: 2px solid #B7E4C7; }
+        .header { background: linear-gradient(135deg, #D8F3DC 0%, #B7E4C7 100%); padding: 28px 24px; text-align: center; }
+        .header h1 { margin: 0; color: #1B4332; font-size: 24px; font-weight: 800; }
         .header p { margin: 6px 0 0 0; color: #2D6A4F; font-size: 14px; font-weight: 600; }
         .content { padding: 28px 24px; }
         .badge { display: inline-block; background: #D8F3DC; color: #1B4332; font-weight: bold; padding: 6px 16px; border-radius: 20px; font-size: 13px; margin-bottom: 16px; }
-        .field-group { margin-bottom: 16px; }
+        .section-title { font-size: 16px; color: #1B4332; border-bottom: 2px solid #E8F5E9; padding-bottom: 6px; margin: 22px 0 14px 0; font-weight: 700; }
+        .field-group { margin-bottom: 14px; }
         .label { font-size: 12px; font-weight: bold; color: #8D99AE; text-transform: uppercase; margin-bottom: 4px; }
-        .value { font-size: 15px; color: #2B2D42; font-weight: 500; }
-        .message-box { background: #FAF6F0; border-left: 4px solid #52B788; padding: 14px 18px; border-radius: 12px; margin: 18px 0; }
-        .footer { background: #FAF6F0; padding: 16px; text-align: center; font-size: 12px; color: #8D99AE; border-top: 1px solid #EAEAEA; }
+        .value { font-size: 15px; color: #2B2D42; font-weight: 600; }
+        .message-box { background: #FAF6F0; border-left: 4px solid #52B788; padding: 14px 18px; border-radius: 12px; margin: 16px 0; font-style: italic; line-height: 1.5; color: #2B2D42; }
+        .footer { background: #FAF6F0; padding: 18px; text-align: center; font-size: 12px; color: #8D99AE; border-top: 1px solid #EAEAEA; }
+        .pet-card-inline { background: #F0FFF4; border: 1px solid #C6F6D5; border-radius: 14px; padding: 14px 18px; margin-bottom: 18px; }
       </style>
     </head>
     <body>
       <div class="card">
         
         <div class="header">
-          <div style="font-size: 36px; margin-bottom: 6px;">🐾</div>
-          <h1>New Adoption Request: ${data.petName || 'Rescued Pet'}</h1>
-          <p>PawsCare Animal Adoption Program</p>
+          <div style="font-size: 38px; margin-bottom: 6px;">🐾</div>
+          <h1>PawsCare — New Adoption Application</h1>
+          <p>Rescue • Adopt • Heal</p>
         </div>
 
         <div class="content">
-          <div>
-            <span class="badge">Target Pet: 🐶🐱 ${data.petName || 'Rescued Pet'}</span>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span class="badge">Target Pet: ${petName}</span>
+            <span style="font-size: 12px; color: #8D99AE;">Application ID: <strong>#${data.id || 'N/A'}</strong></span>
           </div>
 
+          <div class="pet-card-inline">
+            <div style="font-size: 17px; font-weight: 800; color: #1B4332; margin-bottom: 4px;">🐾 ${petName}</div>
+            <div style="font-size: 14px; color: #2D6A4F;">
+              <strong>Breed:</strong> ${data.petBreed || 'Adoptable Pet'} &nbsp;•&nbsp; <strong>Age:</strong> ${data.petAge || 'Rescued Animal'}
+            </div>
+          </div>
+
+          <div class="section-title">👤 Applicant Details</div>
+
           <div class="field-group">
-            <div class="label">Applicant Full Name:</div>
-            <div class="value" style="font-size: 17px; font-weight: 700; color: #1B4332;">${data.applicantName}</div>
+            <div class="label">Full Name:</div>
+            <div class="value" style="font-size: 16px; color: #1B4332;">${data.applicantName}</div>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
@@ -127,10 +159,12 @@ export async function sendAdoptionRequestEmail(data) {
             </div>
           </div>
 
+          <div class="section-title">🏡 Application & Living Details</div>
+
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
             <div class="field-group">
               <div class="label">Housing Type:</div>
-              <div class="value">🏡 ${data.housingType || 'Apartment / House'}</div>
+              <div class="value">🏡 ${data.housingType || 'Apartment with Yard'}</div>
             </div>
 
             <div class="field-group">
@@ -139,23 +173,24 @@ export async function sendAdoptionRequestEmail(data) {
             </div>
           </div>
 
-          <div class="message-box">
-            <div class="label" style="color: #2D6A4F;">Why would you be a great match for ${data.petName || 'this pet'}?</div>
-            <div class="value" style="margin-top: 6px; font-style: italic; line-height: 1.5;">
+          <div class="field-group" style="margin-top: 14px;">
+            <div class="label" style="color: #2D6A4F;">Why would you be a great match for ${petName}?</div>
+            <div class="message-box">
               "${data.message || 'No additional message provided.'}"
             </div>
           </div>
 
           <div class="field-group">
-            <div class="label">Submission Date & Time:</div>
+            <div class="label">Submitted Date & Time:</div>
             <div class="value" style="font-size: 13px; color: #5C677D;">
-              🗓️ ${new Date().toLocaleString()}
+              🗓️ ${new Date(data.submittedAt || Date.now()).toLocaleString()}
             </div>
           </div>
+
         </div>
 
         <div class="footer">
-          This adoption request was automatically dispatched from the PawsCare Portal to <strong>${adminEmail}</strong>.
+          This adoption application was automatically dispatched from the PawsCare Portal to <strong>${adminEmail}</strong>.
         </div>
 
       </div>
@@ -170,7 +205,7 @@ export async function sendAdoptionRequestEmail(data) {
     html: htmlContent
   });
 
-  console.log(`✅ Real Adoption Request email delivered to ${adminEmail}! MessageId: ${info.messageId}`);
+  console.log(`✅ Real Adoption Application email delivered to ${adminEmail}! MessageId: ${info.messageId}`);
 
   return {
     success: true,

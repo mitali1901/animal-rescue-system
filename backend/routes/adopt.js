@@ -30,12 +30,21 @@ router.post('/', async (req, res) => {
     db.adoptionApplications = [];
   }
 
-  const finalPetName = petName || (petId && db.adoptions ? (db.adoptions.find(p => p.id === petId)?.name) : 'Rescued Pet');
+  // Lookup target pet from database to get breed and age
+  const pet = (db.adoptions || []).find(
+    p => p.id === petId || (petName && p.name.toLowerCase() === petName.toLowerCase())
+  );
+
+  const finalPetName = petName || (pet ? pet.name : 'Rescued Pet');
+  const petBreed = pet ? pet.breed : 'Adoptable Pet';
+  const petAge = pet ? pet.age : 'Rescued Animal';
 
   const application = {
     id: `adopt-${Date.now()}`,
-    petId: petId || 'pet-generic',
+    petId: pet ? pet.id : (petId || 'pet-generic'),
     petName: finalPetName,
+    petBreed,
+    petAge,
     applicantName: applicantName.trim(),
     email: email.trim(),
     phone: phone.trim(),
@@ -46,26 +55,26 @@ router.post('/', async (req, res) => {
     status: 'Pending Review'
   };
 
-  try {
-    // 1. Send Nodemailer email to ADMIN_EMAIL
-    const emailResult = await sendAdoptionRequestEmail(application);
+  // 1. Permanently store application in database
+  db.adoptionApplications.unshift(application);
+  writeDb(db);
 
-    // 2. Store application in database upon successful email delivery
-    db.adoptionApplications.unshift(application);
-    writeDb(db);
+  // 2. Dispatch real email to ADMIN_EMAIL using Nodemailer
+  try {
+    const emailResult = await sendAdoptionRequestEmail(application);
 
     return res.status(200).json({
       success: true,
-      message: `Adoption request for ${finalPetName} submitted and email delivered successfully!`,
+      message: `Adoption application for ${finalPetName} submitted and email delivered successfully!`,
       application,
       emailResult
     });
   } catch (err) {
-    console.error('❌ Error sending adoption email:', err.message);
+    console.error('❌ Error delivering adoption email:', err.message);
 
     return res.status(500).json({
       success: false,
-      message: `Email could not be delivered: ${err.message}`
+      message: err.message || 'Email delivery failed. Please check backend/.env credentials.'
     });
   }
 });
