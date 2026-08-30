@@ -50,26 +50,22 @@ router.post('/', async (req, res) => {
     // 1. Send Nodemailer email to ADMIN_EMAIL
     const emailResult = await sendAdoptionRequestEmail(application);
 
-    // 2. Store application in database
+    // 2. Store application in database upon successful email delivery
     db.adoptionApplications.unshift(application);
     writeDb(db);
 
     return res.status(200).json({
       success: true,
-      message: `Adoption request for ${finalPetName} submitted and email sent successfully!`,
+      message: `Adoption request for ${finalPetName} submitted and email delivered successfully!`,
       application,
       emailResult
     });
   } catch (err) {
-    console.error('❌ Error sending adoption email:', err);
-
-    // If database save is still desired on email error
-    db.adoptionApplications.unshift(application);
-    writeDb(db);
+    console.error('❌ Error sending adoption email:', err.message);
 
     return res.status(500).json({
       success: false,
-      message: `Failed to dispatch adoption confirmation email: ${err.message}`
+      message: `Email could not be delivered: ${err.message}`
     });
   }
 });

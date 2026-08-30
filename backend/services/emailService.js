@@ -1,70 +1,62 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
-dotenv.config();
-
-let transporter;
-
 /**
  * Configure and return Nodemailer transporter
- * Supports EMAIL_USER + EMAIL_PASS (Gmail App Password), SMTP_USER + SMTP_PASS, or Ethereal test account
+ * Strictly uses EMAIL_USER + EMAIL_PASS (Gmail App Password) or SMTP settings
  */
-async function getTransporter() {
-  if (transporter) return transporter;
+export async function getTransporter() {
+  dotenv.config(); // Reload .env values
 
   const emailUser = process.env.EMAIL_USER;
   const emailPass = process.env.EMAIL_PASS;
 
-  // 1. If user provided Gmail App Password credentials via EMAIL_USER and EMAIL_PASS
-  if (emailUser && emailPass && emailUser !== 'your_email@gmail.com' && emailPass !== 'your_gmail_app_password') {
-    transporter = nodemailer.createTransport({
+  // Check if real Gmail credentials are provided
+  if (
+    emailUser &&
+    emailPass &&
+    emailUser !== 'your_email@gmail.com' &&
+    emailPass !== 'your_gmail_app_password' &&
+    !emailUser.includes('example.com')
+  ) {
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: emailUser,
-        pass: emailPass
+        user: emailUser.trim(),
+        pass: emailPass.trim().replace(/\s+/g, '') // remove spaces from 16-char app password if any
       }
     });
-    console.log(`📧 Nodemailer configured with Gmail account: ${emailUser}`);
+
+    // Verify SMTP connection
+    await transporter.verify();
+    console.log(`✅ Nodemailer connected successfully to Gmail account: ${emailUser}`);
     return transporter;
   }
 
-  // 2. If user provided custom SMTP credentials
-  if (process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_USER !== 'demo.rescue.volunteer@ethereal.email') {
-    transporter = nodemailer.createTransport({
+  // Check if custom SMTP is provided
+  if (
+    process.env.SMTP_USER &&
+    process.env.SMTP_PASS &&
+    process.env.SMTP_USER !== 'demo.rescue.volunteer@ethereal.email' &&
+    process.env.SMTP_USER !== 'your_email@gmail.com'
+  ) {
+    const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587', 10),
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+        user: process.env.SMTP_USER.trim(),
+        pass: process.env.SMTP_PASS.trim()
       }
     });
+    await transporter.verify();
     return transporter;
   }
 
-  // 3. Fallback: Dynamic Ethereal test account for seamless local testing
-  try {
-    const testAccount = await nodemailer.createTestAccount();
-    transporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass
-      }
-    });
-    console.log(`📧 Ethereal test mailer initialized for ${testAccount.user}`);
-    return transporter;
-  } catch (e) {
-    transporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: { user: 'demo@ethereal.email', pass: 'demo' }
-    });
-    return transporter;
-  }
+  // If credentials are still placeholders, throw explicit error so the user knows
+  throw new Error(
+    'Real Gmail credentials are not configured. Please open backend/.env and replace placeholders with your real EMAIL_USER, EMAIL_PASS (Gmail App Password), and ADMIN_EMAIL.'
+  );
 }
 
 /**
@@ -72,11 +64,15 @@ async function getTransporter() {
  * @param {Object} data - Contains petName, applicantName, phone, email, housingType, hasOtherPets, message
  */
 export async function sendAdoptionRequestEmail(data) {
+  dotenv.config();
+
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail || adminEmail === 'your_admin_email@gmail.com') {
+    throw new Error('ADMIN_EMAIL is not configured in backend/.env. Please set your real receiving email address.');
+  }
+
   const mailer = await getTransporter();
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@animalrescue.org';
-  const senderEmail = process.env.EMAIL_USER && process.env.EMAIL_USER !== 'your_email@gmail.com'
-    ? process.env.EMAIL_USER
-    : (process.env.SMTP_FROM || 'adoptions@pawsrescue.org');
+  const senderEmail = process.env.EMAIL_USER;
 
   const subject = `New Adoption Request: ${data.petName || 'Rescued Pet'}`;
 
@@ -174,20 +170,15 @@ export async function sendAdoptionRequestEmail(data) {
     html: htmlContent
   });
 
-  const previewUrl = nodemailer.getTestMessageUrl(info);
-  console.log(`📧 Adoption request email sent for ${data.petName} to ${adminEmail}: ${info.messageId}`);
-  if (previewUrl) {
-    console.log(`🔗 Preview Email Online: ${previewUrl}`);
-  }
+  console.log(`✅ Real Adoption Request email delivered to ${adminEmail}! MessageId: ${info.messageId}`);
 
   return {
     success: true,
     messageId: info.messageId,
-    previewUrl: previewUrl || null
+    recipient: adminEmail
   };
 }
 
-// Alias export for consistency
 export const sendAdoptionApplicationEmail = sendAdoptionRequestEmail;
 
 /**
