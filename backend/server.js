@@ -7,6 +7,7 @@ import adoptRoutes from './routes/adopt.js';
 import petcareRoutes from './routes/petcare.js';
 import helperRoutes from './routes/helpers.js';
 import usersRoutes from './routes/users.js';
+import chatbotRoutes from './routes/chatbot.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,6 +21,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // API Routes
+app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/adopt', adoptRoutes);
 app.use('/api/adoption', adoptionRoutes);
 app.use('/api/rescue', rescueRoutes);

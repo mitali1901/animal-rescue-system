@@ -31,9 +31,6 @@ export async function fetchAdoptionApplications() {
   return res.json();
 }
 
-/**
- * Submit adoption application to POST /api/adopt with email dispatch
- */
 export async function submitAdoptionApplication(data) {
   const res = await fetch(`${API_BASE}/adopt`, {
     method: 'POST',
@@ -80,4 +77,20 @@ export async function fetchNearbyHelpers(lat = '', lng = '', type = 'All') {
   const res = await fetch(`${API_BASE}/helpers?${query.toString()}`);
   if (!res.ok) throw new Error('Failed to fetch helpers');
   return res.json();
+}
+
+/**
+ * Send message to Gemini Veterinary AI Assistant
+ */
+export async function sendChatMessage(message, history = []) {
+  const res = await fetch(`${API_BASE}/chatbot/message`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, history })
+  });
+  const json = await res.json();
+  if (!res.ok || json.success === false) {
+    throw new Error(json.message || 'Failed to get response from Veterinary Assistant.');
+  }
+  return json;
 }

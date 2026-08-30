@@ -202,6 +202,31 @@ export default function Navbar({ onOpenRescueModal }) {
                       <div style={{ fontSize: '0.72rem', color: '#5C677D', fontWeight: 500 }}>Remedies & vet booking</div>
                     </div>
                   </Link>
+
+                  <Link
+                    to="/cure-animals"
+                    onClick={() => setCureDropdownOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '10px 14px',
+                      borderRadius: '12px',
+                      textDecoration: 'none',
+                      color: '#2B2D42',
+                      fontSize: '0.88rem',
+                      fontWeight: 700,
+                      background: '#F3E8FF',
+                      border: '1px dashed #D8B4F8',
+                      transition: 'background 0.2s ease'
+                    }}
+                  >
+                    <span style={{ fontSize: '1.1rem' }}>🩺</span>
+                    <div>
+                      <div style={{ color: '#4A148C' }}>Veterinary AI Assistant</div>
+                      <div style={{ fontSize: '0.72rem', color: '#7B2CBF', fontWeight: 500 }}>Ask pet health questions</div>
+                    </div>
+                  </Link>
                 </div>
               </div>
             )}
