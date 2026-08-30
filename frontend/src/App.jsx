@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import RescueModal from './components/RescueModal';
 import AdoptionModal from './components/AdoptionModal';
 
+import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import CureAnimalsPage from './pages/CureAnimalsPage';
 import RescuePage from './pages/RescuePage';
@@ -64,101 +68,118 @@ export default function App() {
   };
 
   return (
-    <BrowserRouter>
-      <Routes>
-        
-        {/* Main Website Home */}
-        <Route
-          path="/"
-          element={
-            <MainAppLayout onOpenRescueModal={() => setIsRescueModalOpen(true)}>
-              <HomePage
-                pets={pets}
-                onOpenRescueModal={() => setIsRescueModalOpen(true)}
-                onOpenAdoptionModal={(pet) => setSelectedAdoptionPet(pet)}
-              />
-            </MainAppLayout>
-          }
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          
+          {/* Public Auth Gateway */}
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* Protected Main Website Home */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <MainAppLayout onOpenRescueModal={() => setIsRescueModalOpen(true)}>
+                  <HomePage
+                    pets={pets}
+                    onOpenRescueModal={() => setIsRescueModalOpen(true)}
+                    onOpenAdoptionModal={(pet) => setSelectedAdoptionPet(pet)}
+                  />
+                </MainAppLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected Meet Our Pets -> Adopt a Pet */}
+          <Route
+            path="/adopt"
+            element={
+              <ProtectedRoute>
+                <MainAppLayout onOpenRescueModal={() => setIsRescueModalOpen(true)}>
+                  <AdoptionPage
+                    pets={pets}
+                    onOpenAdoptionModal={(pet) => setSelectedAdoptionPet(pet)}
+                  />
+                </MainAppLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected Cure Animals Central Hub & Gemini Assistant */}
+          <Route
+            path="/cure-animals"
+            element={
+              <ProtectedRoute>
+                <MainAppLayout onOpenRescueModal={() => setIsRescueModalOpen(true)}>
+                  <CureAnimalsPage
+                    onOpenRescueModal={() => setIsRescueModalOpen(true)}
+                  />
+                </MainAppLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected Cure Animals -> Option 1: Cure Injured Animal */}
+          <Route
+            path="/rescue"
+            element={
+              <ProtectedRoute>
+                <MainAppLayout onOpenRescueModal={() => setIsRescueModalOpen(true)}>
+                  <RescuePage
+                    rescues={rescues}
+                    onOpenRescueModal={() => setIsRescueModalOpen(true)}
+                  />
+                </MainAppLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected Cure Animals -> Option 2: Help My Pet */}
+          <Route
+            path="/petcare"
+            element={
+              <ProtectedRoute>
+                <MainAppLayout onOpenRescueModal={() => setIsRescueModalOpen(true)}>
+                  <PetCarePage
+                    guides={guides}
+                  />
+                </MainAppLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Protected Nearby Helpers Location API */}
+          <Route
+            path="/helpers"
+            element={
+              <ProtectedRoute>
+                <MainAppLayout onOpenRescueModal={() => setIsRescueModalOpen(true)}>
+                  <HelperMapPage />
+                </MainAppLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Fallback to Home (which triggers ProtectedRoute to /login if unauthenticated) */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+
+        </Routes>
+
+        {/* Rescue & Adoption Modals */}
+        <RescueModal
+          isOpen={isRescueModalOpen}
+          onClose={() => setIsRescueModalOpen(false)}
+          onReportSuccess={handleNewRescueAdded}
         />
 
-        {/* Meet Our Pets -> Adopt a Pet */}
-        <Route
-          path="/adopt"
-          element={
-            <MainAppLayout onOpenRescueModal={() => setIsRescueModalOpen(true)}>
-              <AdoptionPage
-                pets={pets}
-                onOpenAdoptionModal={(pet) => setSelectedAdoptionPet(pet)}
-              />
-            </MainAppLayout>
-          }
+        <AdoptionModal
+          isOpen={!!selectedAdoptionPet}
+          pet={selectedAdoptionPet}
+          onClose={() => setSelectedAdoptionPet(null)}
         />
 
-        {/* Cure Animals Central Hub */}
-        <Route
-          path="/cure-animals"
-          element={
-            <MainAppLayout onOpenRescueModal={() => setIsRescueModalOpen(true)}>
-              <CureAnimalsPage
-                onOpenRescueModal={() => setIsRescueModalOpen(true)}
-              />
-            </MainAppLayout>
-          }
-        />
-
-        {/* Cure Animals -> Option 1: Cure Injured Animal */}
-        <Route
-          path="/rescue"
-          element={
-            <MainAppLayout onOpenRescueModal={() => setIsRescueModalOpen(true)}>
-              <RescuePage
-                rescues={rescues}
-                onOpenRescueModal={() => setIsRescueModalOpen(true)}
-              />
-            </MainAppLayout>
-          }
-        />
-
-        {/* Cure Animals -> Option 2: Help My Pet */}
-        <Route
-          path="/petcare"
-          element={
-            <MainAppLayout onOpenRescueModal={() => setIsRescueModalOpen(true)}>
-              <PetCarePage
-                guides={guides}
-              />
-            </MainAppLayout>
-          }
-        />
-
-        {/* Nearby Helpers Location API */}
-        <Route
-          path="/helpers"
-          element={
-            <MainAppLayout onOpenRescueModal={() => setIsRescueModalOpen(true)}>
-              <HelperMapPage />
-            </MainAppLayout>
-          }
-        />
-
-        {/* Fallback to Home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-
-      </Routes>
-
-      {/* Rescue & Adoption Modals */}
-      <RescueModal
-        isOpen={isRescueModalOpen}
-        onClose={() => setIsRescueModalOpen(false)}
-        onReportSuccess={handleNewRescueAdded}
-      />
-
-      <AdoptionModal
-        isOpen={!!selectedAdoptionPet}
-        pet={selectedAdoptionPet}
-        onClose={() => setSelectedAdoptionPet(null)}
-      />
-
-    </BrowserRouter>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

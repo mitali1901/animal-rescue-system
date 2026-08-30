@@ -1,186 +1,337 @@
 import express from 'express';
-import nodemailer from 'nodemailer';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { readDb, writeDb } from '../database/db.js';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import {
+  sendVerificationOtpEmail,
+  sendWelcomeEmail,
+  sendLoginNotificationEmail
+} from '../services/emailService.js';
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET || 'pawscare_production_super_secret_jwt_key_2026';
 
-// Memory / DB store for OTP verification
-let activeOtps = {}; // { [email]: { otp: '123456', expiresAt: timestamp } }
+// In-memory store for pending OTP registrations
+// Structure: email -> { fullName, hashedPassword, otp, expiresAt, attempts, lastSentAt }
+const pendingRegistrations = new Map();
 
-async function getTransporter() {
-  if (process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_HOST !== 'smtp.ethereal.email') {
-    return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
-  }
-
-  try {
-    const testAccount = await nodemailer.createTestAccount();
-    return nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass
-      }
-    });
-  } catch (e) {
-    return nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: { user: 'demo@ethereal.email', pass: 'demo' }
-    });
-  }
+/**
+ * Validate password strength:
+ * - Min 8 characters
+ * - 1 uppercase letter
+ * - 1 lowercase letter
+ * - 1 number
+ * - 1 special character
+ */
+function validatePassword(password) {
+  if (!password || password.length < 8) return false;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  return hasUpper && hasLower && hasNumber && hasSpecial;
 }
 
-// POST /api/auth/send-verification-otp
-router.post('/send-verification-otp', async (req, res) => {
-  const { email } = req.body;
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return res.status(400).json({ error: 'Valid email address is required.' });
+// 1. POST /api/auth/signup-request — Validate details, generate OTP, send email
+router.post('/signup-request', async (req, res) => {
+  const { fullName, email, password, confirmPassword } = req.body;
+
+  if (!fullName || !fullName.trim()) {
+    return res.status(400).json({ success: false, message: 'Please enter your full name.' });
   }
 
-  const cleanEmail = email.toLowerCase().trim();
-  // Generate a 6-digit numeric OTP code
-  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+  if (!email || !email.trim()) {
+    return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+  }
 
-  activeOtps[cleanEmail] = {
-    otp: otpCode,
-    expiresAt
-  };
+  const normalizedEmail = email.trim().toLowerCase();
 
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #FAF6F0; padding: 24px; margin: 0; }
-        .card { background: #FFFFFF; max-width: 480px; margin: 0 auto; border-radius: 20px; padding: 32px; border: 2px solid #FFCAD4; box-shadow: 0 8px 30px rgba(0,0,0,0.06); text-align: center; }
-        .logo { font-size: 36px; margin-bottom: 12px; }
-        .code-box { background: #FAF6F0; border: 2px dashed #74C69D; padding: 18px; border-radius: 16px; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1B4332; margin: 24px 0; }
-        .footer { font-size: 12px; color: #8D99AE; margin-top: 24px; }
-      </style>
-    </head>
-    <body>
-      <div class="card">
-        <div class="logo">🐾</div>
-        <h2 style="color: #2B2D42; margin: 0 0 8px 0;">Verify Your Email Address</h2>
-        <p style="color: #5C677D; font-size: 14px; margin: 0;">Use the following 6-digit verification code to complete your PawsCare registration:</p>
-        
-        <div class="code-box">${otpCode}</div>
-        
-        <p style="color: #E07A5F; font-size: 13px; font-weight: bold; margin: 0;">This code is valid for 10 minutes.</p>
-        <p style="color: #8D99AE; font-size: 12px; margin-top: 14px;">If you did not request this verification code, please ignore this email.</p>
-        
-        <div class="footer">
-          © 2026 PawsCare Animal Rescue & Pet Healing System
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
+  // Validate password
+  if (!validatePassword(password)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 8 characters long and contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.'
+    });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({ success: false, message: 'Passwords do not match.' });
+  }
+
+  const db = readDb();
+  if (!db.users) db.users = [];
+
+  // Check duplicate email
+  const existingUser = db.users.find(u => u.email.toLowerCase() === normalizedEmail);
+  if (existingUser) {
+    return res.status(409).json({
+      success: false,
+      message: 'An account with this email already exists. Please sign in instead.'
+    });
+  }
+
+  // Generate real 6-digit numeric OTP
+  const otp = crypto.randomInt(100000, 1000000).toString();
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // Store in pending registrations with 10-minute expiry
+  pendingRegistrations.set(normalizedEmail, {
+    fullName: fullName.trim(),
+    hashedPassword,
+    otp,
+    expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+    attempts: 0,
+    lastSentAt: Date.now()
+  });
 
   try {
-    const mailer = await getTransporter();
-    const info = await mailer.sendMail({
-      from: `"PawsCare Security" <${process.env.SMTP_FROM || 'auth@pawsrescue.org'}>`,
-      to: cleanEmail,
-      subject: `🐾 Your PawsCare Verification Code: ${otpCode}`,
-      html: htmlContent
-    });
+    // Send real OTP email
+    await sendVerificationOtpEmail(normalizedEmail, fullName.trim(), otp);
 
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    console.log(`✉️ Verification OTP [${otpCode}] sent to ${cleanEmail}. MessageId: ${info.messageId}`);
-    if (previewUrl) {
-      console.log(`🔗 Preview Verification Email online: ${previewUrl}`);
-    }
-
-    res.json({
+    return res.status(200).json({
       success: true,
-      message: `Verification code sent to ${cleanEmail}`,
-      previewUrl: previewUrl || null
+      message: `A 6-digit verification code has been sent to ${normalizedEmail}.`,
+      email: normalizedEmail
     });
   } catch (err) {
-    console.warn(`⚠️ Mailer notice: ${err.message}`);
-    // Still allow verification with the active generated OTP code in memory
-    res.json({
-      success: true,
-      message: `Verification code dispatched to ${cleanEmail}`,
-      note: 'OTP stored in verification service'
+    console.error('❌ Failed to send OTP email:', err.message);
+    return res.status(500).json({
+      success: false,
+      message: `Failed to send verification email: ${err.message}`
     });
   }
 });
 
-// POST /api/auth/verify-otp
-router.post('/verify-otp', (req, res) => {
+// 2. POST /api/auth/verify-otp — Verify OTP, save user to database, send Welcome Email, issue JWT
+router.post('/verify-otp', async (req, res) => {
   const { email, otp } = req.body;
+
   if (!email || !otp) {
-    return res.status(400).json({ error: 'Email and verification code are required.' });
+    return res.status(400).json({ success: false, message: 'Please provide email and verification code.' });
   }
 
-  const cleanEmail = email.toLowerCase().trim();
-  const cleanOtp = otp.toString().trim();
-  const record = activeOtps[cleanEmail];
+  const normalizedEmail = email.trim().toLowerCase();
+  const pending = pendingRegistrations.get(normalizedEmail);
 
-  if (!record) {
-    return res.status(400).json({ error: 'No verification code found. Please request a new code.' });
+  if (!pending) {
+    return res.status(400).json({
+      success: false,
+      message: 'No pending registration found for this email. Please fill the signup form again.'
+    });
   }
 
-  if (Date.now() > record.expiresAt) {
-    delete activeOtps[cleanEmail];
-    return res.status(400).json({ error: 'Verification code has expired. Please request a new code.' });
+  // Check expiration
+  if (Date.now() > pending.expiresAt) {
+    pendingRegistrations.delete(normalizedEmail);
+    return res.status(400).json({
+      success: false,
+      message: 'Verification code has expired. Please request a new code.'
+    });
   }
 
-  if (record.otp !== cleanOtp) {
-    return res.status(400).json({ error: 'Incorrect verification code. Please check your email and try again.' });
+  // Check attempts
+  if (pending.attempts >= 5) {
+    pendingRegistrations.delete(normalizedEmail);
+    return res.status(429).json({
+      success: false,
+      message: 'Too many incorrect attempts. Please start registration again.'
+    });
   }
 
-  // Verification successful! Clean up OTP record
-  delete activeOtps[cleanEmail];
+  // Verify OTP
+  if (pending.otp !== otp.trim()) {
+    pending.attempts += 1;
+    return res.status(400).json({
+      success: false,
+      message: `Invalid verification code. ${5 - pending.attempts} attempts remaining.`
+    });
+  }
 
-  // Update user in Database as emailVerified: true
+  // OTP is valid! Create real persistent user account
   const db = readDb();
-  if (db.users) {
-    const userIndex = db.users.findIndex(u => u.email && u.email.toLowerCase() === cleanEmail);
-    if (userIndex >= 0) {
-      db.users[userIndex].emailVerified = true;
-      writeDb(db);
-    }
+  if (!db.users) db.users = [];
+
+  const newUser = {
+    id: `user-${Date.now()}`,
+    fullName: pending.fullName,
+    email: normalizedEmail,
+    password: pending.hashedPassword,
+    role: 'member',
+    isVerified: true,
+    createdAt: new Date().toISOString()
+  };
+
+  db.users.push(newUser);
+  writeDb(db);
+  pendingRegistrations.delete(normalizedEmail);
+
+  // Generate JWT token
+  const token = jwt.sign(
+    { id: newUser.id, email: newUser.email, fullName: newUser.fullName },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+
+  // Send Welcome Email asynchronously
+  try {
+    await sendWelcomeEmail(newUser.email, newUser.fullName);
+  } catch (err) {
+    console.warn('Welcome email warning:', err.message);
   }
 
-  res.json({
+  const safeUser = {
+    id: newUser.id,
+    fullName: newUser.fullName,
+    email: newUser.email,
+    role: newUser.role
+  };
+
+  return res.status(201).json({
     success: true,
-    verified: true,
-    message: 'Email address verified successfully!'
+    message: 'Account verified and created successfully!',
+    token,
+    user: safeUser
   });
 });
 
-// GET /api/auth/status/:email
-router.get('/status/:email', (req, res) => {
-  const cleanEmail = req.params.email.toLowerCase().trim();
-  const db = readDb();
-  const user = (db.users || []).find(u => u.email && u.email.toLowerCase() === cleanEmail);
-
-  if (!user) {
-    return res.status(404).json({ error: 'User not found' });
+// 3. POST /api/auth/resend-otp — Resend OTP with 60s cooldown
+router.post('/resend-otp', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Please provide email.' });
   }
 
-  res.json({
+  const normalizedEmail = email.trim().toLowerCase();
+  const pending = pendingRegistrations.get(normalizedEmail);
+
+  if (!pending) {
+    return res.status(400).json({ success: false, message: 'No active registration found. Please sign up first.' });
+  }
+
+  // Check 60-second cooldown
+  const now = Date.now();
+  if (now - pending.lastSentAt < 60 * 1000) {
+    const waitSec = Math.ceil((60 * 1000 - (now - pending.lastSentAt)) / 1000);
+    return res.status(429).json({
+      success: false,
+      message: `Please wait ${waitSec} seconds before requesting a new code.`
+    });
+  }
+
+  const newOtp = crypto.randomInt(100000, 1000000).toString();
+  pending.otp = newOtp;
+  pending.expiresAt = now + 10 * 60 * 1000;
+  pending.lastSentAt = now;
+  pending.attempts = 0;
+
+  try {
+    await sendVerificationOtpEmail(normalizedEmail, pending.fullName, newOtp);
+    return res.status(200).json({
+      success: true,
+      message: `A fresh 6-digit code has been sent to ${normalizedEmail}.`
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 4. POST /api/auth/login — Authenticate existing user, dispatch Login Notification Email, return JWT
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide both email and password.'
+    });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const db = readDb();
+  const users = db.users || [];
+
+  const user = users.find(u => u.email.toLowerCase() === normalizedEmail);
+
+  // 1. If user does NOT exist in database:
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      errorCode: 'ACCOUNT_NOT_FOUND',
+      message: 'Account not found. Please create an account first.'
+    });
+  }
+
+  // 2. Compare hashed password:
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(401).json({
+      success: false,
+      errorCode: 'INVALID_CREDENTIALS',
+      message: 'Incorrect email or password. Please try again.'
+    });
+  }
+
+  // 3. Generate JWT Token:
+  const token = jwt.sign(
+    { id: user.id, email: user.email, fullName: user.fullName },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+
+  const loginTime = new Date().toLocaleString();
+
+  // 4. Send Login Notification Email asynchronously
+  try {
+    await sendLoginNotificationEmail(user.email, user.fullName, loginTime);
+  } catch (err) {
+    console.warn('Login notification email warning:', err.message);
+  }
+
+  const safeUser = {
+    id: user.id,
+    fullName: user.fullName,
     email: user.email,
-    emailVerified: user.emailVerified === true || user.authProvider === 'google'
+    role: user.role || 'member'
+  };
+
+  return res.status(200).json({
+    success: true,
+    message: 'Login successful!',
+    token,
+    user: safeUser
   });
+});
+
+// 5. GET /api/auth/me — Validate session token
+router.get('/me', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'No authentication token provided.' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const db = readDb();
+    const user = (db.users || []).find(u => u.id === decoded.id || u.email === decoded.email);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User account not found.' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role || 'member'
+      }
+    });
+  } catch (err) {
+    return res.status(401).json({ success: false, message: 'Invalid or expired session token.' });
+  }
 });
 
 export default router;

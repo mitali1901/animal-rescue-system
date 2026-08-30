@@ -447,6 +447,36 @@
   ],
   "adoptionApplications": [
     {
+      "id": "adopt-1788116321170",
+      "petId": "pet-2",
+      "petName": "Oliver",
+      "petBreed": "British Shorthair Mix",
+      "petAge": "8 Months",
+      "applicantName": "Kartik Dua",
+      "email": "duakartik98@gmail.com",
+      "phone": "9876234144",
+      "housingType": "Apartment with Yard",
+      "hasOtherPets": "Yes, 1 cat",
+      "message": "hnuiyvfyghbjnkjiuiyugtfdfxdxfdxfguyoipmiihugyufycfcfxcxcxxfgcgvhvhbhbhhhhbhjbhbhbhbhbhbbn bvgg",
+      "submittedAt": "2026-08-30T18:58:41.171Z",
+      "status": "Pending Review"
+    },
+    {
+      "id": "adopt-1788116224857",
+      "petId": "pet-1",
+      "petName": "Bella",
+      "petBreed": "Golden Retriever Mix",
+      "petAge": "1.5 Years",
+      "applicantName": "Mitali Gupta",
+      "email": "mitaligupta0019@gmail.com",
+      "phone": "9876234144",
+      "housingType": "Apartment with Yard",
+      "hasOtherPets": "Yes, 1 cat",
+      "message": "hnuiyvfyghbjnkjiuiyugtfdfxdxfdxfguyoipmiihugyufycfcfxcxcxxfgcgvhvhbhbhhhhbhjbhbhbhbhbhbbn bvgg",
+      "submittedAt": "2026-08-30T18:57:04.861Z",
+      "status": "Pending Review"
+    },
+    {
       "id": "adopt-1788113759215",
       "petId": "pet-1",
       "petName": "Bella",
@@ -669,5 +699,16 @@
       "status": "Pending Review"
     }
   ],
-  "consultationRequests": []
+  "consultationRequests": [],
+  "users": [
+    {
+      "id": "user-1788117685694",
+      "fullName": "Mitali Gupta",
+      "email": "mitaligupta0019@gmail.com",
+      "password": "$2b$10$v68yeuIGojQ8ZSAjzfR7ce/.a.UAPc6.Ox/WOVDtvJEy876U7G3VK",
+      "role": "member",
+      "isVerified": true,
+      "createdAt": "2026-08-30T19:21:25.694Z"
+    }
+  ]
 }

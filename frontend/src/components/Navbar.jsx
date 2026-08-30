@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
-import { NavLink, Link, useLocation } from 'react-router-dom';
-import { Heart, Stethoscope, MapPin, ShieldAlert, ChevronDown, Sparkles } from 'lucide-react';
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Heart, Stethoscope, MapPin, ShieldAlert, ChevronDown, Sparkles, LogOut, User } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar({ onOpenRescueModal }) {
   const [cureDropdownOpen, setCureDropdownOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout, isAuthenticated } = useAuth();
 
   const isCureActive = location.pathname.startsWith('/cure-animals') || location.pathname === '/rescue' || location.pathname === '/petcare';
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <header style={{
@@ -107,7 +115,7 @@ export default function Navbar({ onOpenRescueModal }) {
             )}
           </NavLink>
 
-          {/* 2. Cure Animals (Dropdown with Cure Injured Animal & Help My Pet) */}
+          {/* 2. Cure Animals (Dropdown with Cure Injured Animal, Help My Pet & AI Assistant) */}
           <div 
             style={{ position: 'relative' }}
             onMouseEnter={() => setCureDropdownOpen(true)}
@@ -259,8 +267,60 @@ export default function Navbar({ onOpenRescueModal }) {
 
         </nav>
 
-        {/* Report Injured Animal Action Button */}
+        {/* User Account Badge & Report Injured Animal Action Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          
+          {isAuthenticated && user && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: '#FFFFFF',
+              padding: '4px 12px 4px 6px',
+              borderRadius: '30px',
+              border: '1px solid #EAEAEA',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+            }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #FFCAD4 0%, #E8DEF8 100%)',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.85rem',
+                fontWeight: 800,
+                color: '#7A3B2E'
+              }}>
+                {user.fullName ? user.fullName.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <span style={{ fontSize: '0.86rem', fontWeight: 700, color: '#2B2D42' }}>
+                {user.fullName ? user.fullName.split(' ')[0] : 'Member'}
+              </span>
+
+              <button
+                onClick={handleLogout}
+                title="Sign Out"
+                style={{
+                  border: 'none',
+                  background: 'none',
+                  color: '#8D99AE',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginLeft: '4px',
+                  borderRadius: '6px'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#E07A5F'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#8D99AE'; }}
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          )}
+
           <button className="btn-pastel-primary" onClick={onOpenRescueModal}>
             <ShieldAlert size={18} />
             <span>Report Injured Animal</span>

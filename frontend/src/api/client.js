@@ -1,5 +1,83 @@
 const API_BASE = '/api';
 
+/**
+ * Authentication API Client Methods
+ */
+export async function signupRequest(data) {
+  const res = await fetch(`${API_BASE}/auth/signup-request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  const json = await res.json();
+  if (!res.ok || json.success === false) {
+    const error = new Error(json.message || 'Signup request failed.');
+    error.status = res.status;
+    error.errorCode = json.errorCode;
+    throw error;
+  }
+  return json;
+}
+
+export async function verifyOtp(data) {
+  const res = await fetch(`${API_BASE}/auth/verify-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  const json = await res.json();
+  if (!res.ok || json.success === false) {
+    const error = new Error(json.message || 'OTP verification failed.');
+    error.status = res.status;
+    throw error;
+  }
+  return json;
+}
+
+export async function resendOtp(data) {
+  const res = await fetch(`${API_BASE}/auth/resend-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  const json = await res.json();
+  if (!res.ok || json.success === false) {
+    const error = new Error(json.message || 'Failed to resend OTP.');
+    error.status = res.status;
+    throw error;
+  }
+  return json;
+}
+
+export async function loginUser(data) {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  const json = await res.json();
+  if (!res.ok || json.success === false) {
+    const error = new Error(json.message || 'Login failed.');
+    error.status = res.status;
+    error.errorCode = json.errorCode;
+    throw error;
+  }
+  return json;
+}
+
+export async function fetchCurrentUser(token) {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  if (!res.ok) throw new Error('Session expired');
+  return res.json();
+}
+
+/**
+ * Animal Rescue, Adoption, and Care API Methods
+ */
 export async function fetchRescues() {
   const res = await fetch(`${API_BASE}/rescue`);
   if (!res.ok) throw new Error('Failed to fetch rescues');
@@ -79,9 +157,6 @@ export async function fetchNearbyHelpers(lat = '', lng = '', type = 'All') {
   return res.json();
 }
 
-/**
- * Send message to Gemini Veterinary AI Assistant
- */
 export async function sendChatMessage(message, history = []) {
   const res = await fetch(`${API_BASE}/chatbot/message`, {
     method: 'POST',
