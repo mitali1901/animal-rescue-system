@@ -126,13 +126,6 @@ export async function sendRescueReportEmail(report) {
           </div>
 
           <div class="field-group">
-            <div class="label">Firebase Authenticated User:</div>
-            <div class="value" style="font-size: 13px; color: #5C677D;">
-              UID: <code>${report.userId || 'N/A'}</code> | User Email: <strong>${report.userEmail || 'N/A'}</strong>
-            </div>
-          </div>
-
-          <div class="field-group">
             <div class="label">Timestamp:</div>
             <div class="value" style="font-size: 13px;">${new Date(report.reportedAt).toLocaleString()}</div>
           </div>
@@ -169,6 +162,155 @@ export async function sendRescueReportEmail(report) {
     return { success: true, messageId: info.messageId, recipient: targetEmail, previewUrl: previewUrl || null };
   } catch (err) {
     console.warn(`⚠️ Email notice: Report #${report.id} saved. (${err.message})`);
+    return { success: false, note: err.message, recipient: targetEmail };
+  }
+}
+
+/**
+ * Send complete formatted Adoption Application confirmation email to ADMIN_EMAIL
+ * @param {Object} application
+ * @param {Object} pet
+ */
+export async function sendAdoptionApplicationEmail(application, pet) {
+  const mailer = await getTransporter();
+  const targetEmail = process.env.ADMIN_EMAIL || adminEmail;
+  const petName = application.petName || (pet ? pet.name : 'Rescued Pet');
+  const subject = `New Adoption Application — ${petName}`;
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #FAF6F0; margin: 0; padding: 20px; color: #2B2D42; }
+        .card { background: #FFFFFF; max-width: 600px; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,0.08); border: 2px solid #B7E4C7; }
+        .header { background: linear-gradient(135deg, #D8F3DC 0%, #B7E4C7 100%); padding: 28px 24px; text-align: center; }
+        .header h1 { margin: 0; color: #1B4332; font-size: 24px; }
+        .content { padding: 28px 24px; }
+        .badge { display: inline-block; background: #D8F3DC; color: #1B4332; font-weight: bold; padding: 4px 14px; border-radius: 20px; font-size: 12px; }
+        .intro-box { background: #FAF6F0; border-left: 4px solid #52B788; padding: 16px; border-radius: 12px; margin: 16px 0 24px 0; }
+        .field-group { margin-bottom: 16px; }
+        .label { font-size: 12px; font-weight: bold; color: #8D99AE; text-transform: uppercase; margin-bottom: 4px; }
+        .value { font-size: 15px; color: #2B2D42; }
+        .footer { background: #FAF6F0; padding: 18px; text-align: center; font-size: 13px; color: #5C677D; border-top: 1px solid #E8E8E8; }
+        .pet-preview { width: 100%; max-height: 240px; object-fit: cover; border-radius: 14px; margin-top: 10px; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        
+        <div class="header">
+          <div style="font-size: 32px; margin-bottom: 6px;">🐾</div>
+          <h1>New Adoption Application</h1>
+          <p style="margin: 4px 0 0 0; color: #2D6A4F; font-size: 14px; font-weight: 600;">PawsCare Animal Adoption Program</p>
+        </div>
+
+        <div class="content">
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <span class="badge">Target Pet: ${petName}</span>
+            <span style="font-size: 12px; color: #8D99AE;">Application ID: <strong>#${application.id}</strong></span>
+          </div>
+
+          <div class="intro-box">
+            <h3 style="margin: 0 0 8px 0; color: #1B4332; font-size: 17px;">Thank you for connecting with PawsCare! 🐾</h3>
+            <p style="margin: 0 0 10px 0; font-size: 14px; color: #2B2D42; line-height: 1.5;">
+              We have successfully received your adoption request for <strong>${petName}</strong>.
+            </p>
+            <p style="margin: 0 0 10px 0; font-size: 14px; color: #2B2D42; line-height: 1.5;">
+              Thank you for your interest in giving a rescued animal a loving home. We really appreciate you taking the time to apply.
+            </p>
+            <p style="margin: 0 0 10px 0; font-size: 14px; color: #1B4332; font-weight: bold; line-height: 1.5;">
+              Our team will review your request and get back to you within 1–2 days with the next steps/final update.
+            </p>
+            <p style="margin: 0 0 12px 0; font-size: 14px; color: #2B2D42;">
+              We look forward to connecting with you soon.
+            </p>
+            <div style="font-size: 14px; color: #1B4332; font-weight: bold;">
+              With love,<br />PawsCare Team 🐾
+            </div>
+          </div>
+
+          <h3 style="font-size: 16px; margin: 20px 0 12px 0; color: #2B2D42; border-bottom: 2px solid #FAF6F0; padding-bottom: 6px;">
+            📋 Submitted Application Details
+          </h3>
+
+          <div class="field-group">
+            <div class="label">Applicant Full Name:</div>
+            <div class="value"><strong>${application.applicantName}</strong></div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="field-group">
+              <div class="label">Applicant Email:</div>
+              <div class="value">✉️ <a href="mailto:${application.email}" style="color: #2D6A4F; text-decoration: none; font-weight: 600;">${application.email}</a></div>
+            </div>
+
+            <div class="field-group">
+              <div class="label">Contact Phone:</div>
+              <div class="value">📞 <strong>${application.phone}</strong></div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="field-group">
+              <div class="label">Housing Type:</div>
+              <div class="value">🏡 ${application.housingType || 'Not specified'}</div>
+            </div>
+
+            <div class="field-group">
+              <div class="label">Current Pets at Home:</div>
+              <div class="value">🐾 ${application.hasOtherPets || 'None'}</div>
+            </div>
+          </div>
+
+          ${application.message ? `
+            <div class="field-group" style="background: #FAF6F0; padding: 12px 16px; border-radius: 12px;">
+              <div class="label">Applicant Living Situation & Experience:</div>
+              <div class="value" style="margin-top: 4px; font-style: italic;">"${application.message}"</div>
+            </div>
+          ` : ''}
+
+          <div class="field-group">
+            <div class="label">Submission Timestamp:</div>
+            <div class="value" style="font-size: 13px; color: #5C677D;">
+              🗓️ ${new Date(application.submittedAt).toLocaleString()}
+            </div>
+          </div>
+
+          ${pet && pet.imageUrl ? `
+            <div class="field-group" style="margin-top: 18px;">
+              <div class="label">Pet Profile — ${pet.name} (${pet.breed}):</div>
+              <img src="${pet.imageUrl}" alt="${pet.name}" class="pet-preview" />
+            </div>
+          ` : ''}
+
+        </div>
+
+        <div class="footer">
+          This adoption application notification was automatically dispatched from the PawsCare Animal Rescue Portal to <strong>${targetEmail}</strong>.
+        </div>
+
+      </div>
+    </body>
+    </html>
+  `;
+
+  try {
+    const info = await mailer.sendMail({
+      from: `"PawsCare Adoption Program" <${process.env.SMTP_FROM || 'adoptions@pawsrescue.org'}>`,
+      to: targetEmail,
+      subject: subject,
+      html: htmlContent
+    });
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    console.log(`📧 Adoption application email for ${petName} sent successfully to ${targetEmail}: ${info.messageId}`);
+    if (previewUrl) {
+      console.log(`🔗 Preview Adoption Email online: ${previewUrl}`);
+    }
+    return { success: true, messageId: info.messageId, recipient: targetEmail, previewUrl: previewUrl || null };
+  } catch (err) {
+    console.warn(`⚠️ Email notice: Adoption application #${application.id} saved. (${err.message})`);
     return { success: false, note: err.message, recipient: targetEmail };
   }
 }

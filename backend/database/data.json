@@ -447,6 +447,20 @@
   ],
   "adoptionApplications": [
     {
+      "id": "app-1788086518466",
+      "petId": "pet-1",
+      "petName": "Bella",
+      "petSpecies": "Dog",
+      "applicantName": "Emma Watson",
+      "email": "emma.watson@example.com",
+      "phone": "+1 555-0199",
+      "housingType": "Single Family House",
+      "hasOtherPets": "1 friendly Golden Retriever",
+      "message": "We have a large fenced backyard and work from home. We fell in love with Bella!",
+      "submittedAt": "2026-08-30T10:41:58.466Z",
+      "status": "Pending Review"
+    },
+    {
       "id": "app-1788019554409",
       "petId": "pet-1",
       "petName": "Bella",

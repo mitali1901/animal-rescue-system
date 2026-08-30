@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Heart, Send, CheckCircle2 } from 'lucide-react';
+import { X, Heart, Send, CheckCircle2, Sparkles } from 'lucide-react';
 import { submitAdoptionApplication } from '../api/client';
 
 export default function AdoptionModal({ isOpen, onClose, pet }) {
@@ -13,6 +13,7 @@ export default function AdoptionModal({ isOpen, onClose, pet }) {
   });
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submittedPetName, setSubmittedPetName] = useState('');
 
   if (!isOpen || !pet) return null;
 
@@ -20,15 +21,16 @@ export default function AdoptionModal({ isOpen, onClose, pet }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await submitAdoptionApplication({
+      const response = await submitAdoptionApplication({
         petId: pet.id,
         ...formData
       });
+      setSubmittedPetName(pet.name);
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
         onClose();
-      }, 3000);
+      }, 4000);
     } catch (err) {
       alert('Error submitting application: ' + err.message);
     } finally {
@@ -38,7 +40,7 @@ export default function AdoptionModal({ isOpen, onClose, pet }) {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
+      <div className="modal-content" style={{ maxWidth: success ? '540px' : '520px' }}>
         
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
@@ -60,13 +62,54 @@ export default function AdoptionModal({ isOpen, onClose, pet }) {
           </button>
         </div>
 
+        {/* Website Success Confirmation Message */}
         {success ? (
-          <div style={{ background: '#D8F3DC', color: '#1B4332', padding: '24px', borderRadius: '20px', textAlign: 'center' }}>
-            <CheckCircle2 size={48} color="#52B788" style={{ margin: '0 auto 12px auto' }} />
-            <h4 style={{ fontSize: '1.3rem', marginBottom: '8px' }}>Application Received! 🎉</h4>
-            <p style={{ fontSize: '0.95rem', color: '#1B4332' }}>
-              Thank you for opening your heart to adopt <strong>{pet.name}</strong>! Our shelter coordinator will contact you within 24 hours.
+          <div style={{
+            background: 'linear-gradient(135deg, #D8F3DC 0%, #B7E4C7 100%)',
+            color: '#1B4332',
+            padding: '28px 24px',
+            borderRadius: '24px',
+            textAlign: 'center',
+            border: '2px solid #74C69D',
+            boxShadow: '0 8px 24px rgba(82, 183, 136, 0.2)'
+          }}>
+            <div style={{
+              background: '#FFFFFF',
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '14px',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.06)'
+            }}>
+              <CheckCircle2 size={38} color="#2D6A4F" />
+            </div>
+
+            <h4 style={{ fontSize: '1.45rem', margin: '0 0 8px 0', fontWeight: 800, color: '#1B4332' }}>
+              Application Submitted Successfully! 🐾
+            </h4>
+
+            <p style={{ fontSize: '1.05rem', fontWeight: 700, color: '#2D6A4F', margin: '0 0 12px 0' }}>
+              Thank you for connecting with PawsCare!
             </p>
+
+            <div style={{ background: 'rgba(255, 255, 255, 0.85)', padding: '16px', borderRadius: '16px', margin: '14px 0', fontSize: '0.92rem', lineHeight: '1.6', color: '#2B2D42' }}>
+              <p style={{ margin: '0 0 8px 0' }}>
+                We've received your adoption request for <strong>{submittedPetName || pet.name}</strong>.
+              </p>
+              <p style={{ margin: '0 0 8px 0', fontWeight: 700, color: '#1B4332' }}>
+                Our team will review your request and get back to you within 1–2 days with the next steps.
+              </p>
+              <p style={{ margin: 0, color: '#5C677D' }}>
+                We look forward to connecting with you!
+              </p>
+            </div>
+
+            <div style={{ fontSize: '0.82rem', color: '#2D6A4F', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Sparkles size={14} /> Confirmation email dispatched to admin team
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

@@ -1,5 +1,6 @@
 import express from 'express';
 import { readDb, writeDb } from '../database/db.js';
+import { sendAdoptionApplicationEmail } from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -26,37 +27,53 @@ router.get('/applications', (req, res) => {
   res.json(db.adoptionApplications || []);
 });
 
-// POST submit adoption application
-router.post('/apply', (req, res) => {
+// POST submit adoption application & trigger email confirmation
+router.post('/apply', async (req, res) => {
   const db = readDb();
   const { petId, applicantName, email, phone, housingType, hasOtherPets, message } = req.body;
 
   if (!petId || !applicantName || !email || !phone) {
-    return res.status(400).json({ error: 'Please provide name, email, phone, and target pet.' });
+    return res.status(400).json({ error: 'Please provide your full name, email, phone, and target pet.' });
   }
 
-  const pet = db.adoptions.find(p => p.id === petId);
+  if (!db.adoptionApplications) {
+    db.adoptionApplications = [];
+  }
+
+  const pet = (db.adoptions || []).find(p => p.id === petId);
 
   const application = {
     id: `app-${Date.now()}`,
     petId,
     petName: pet ? pet.name : 'Unknown Pet',
+    petSpecies: pet ? pet.species : 'Pet',
     applicantName,
     email,
     phone,
-    housingType: housingType || 'Apartment',
-    hasOtherPets: hasOtherPets || 'No',
+    housingType: housingType || 'Apartment with Yard',
+    hasOtherPets: hasOtherPets || 'None',
     message: message || '',
     submittedAt: new Date().toISOString(),
     status: 'Pending Review'
   };
 
+  // 1. Permanently store application in database
   db.adoptionApplications.unshift(application);
   writeDb(db);
 
+  // 2. Dispatch Adoption Application Email to ADMIN_EMAIL
+  let emailStatus = { success: false };
+  try {
+    emailStatus = await sendAdoptionApplicationEmail(application, pet);
+  } catch (err) {
+    console.warn(`Email dispatch warning for application #${application.id}:`, err.message);
+    emailStatus = { success: false, note: err.message };
+  }
+
   res.status(201).json({
-    message: `Adoption application for ${application.petName} submitted successfully! Saved to database.`,
-    application
+    message: `Adoption application for ${application.petName} submitted successfully! Saved to database and emailed to admin.`,
+    application,
+    emailStatus
   });
 });
 
