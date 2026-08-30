@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import {
   Send,
   Trash2,
@@ -62,7 +63,7 @@ export default function VeterinaryChatbot({ onOpenRescueModal }) {
     setIsLoading(true);
 
     try {
-      // Build conversation history for context memory (exclude initial greeting if not needed)
+      // Build conversation history for context memory
       const historyPayload = newMessages.slice(1, -1).map(m => ({
         role: m.role === 'user' ? 'user' : 'model',
         content: m.text
@@ -119,60 +120,6 @@ export default function VeterinaryChatbot({ onOpenRescueModal }) {
     setErrorState(null);
   };
 
-  // Format markdown-like bold text & bullet points cleanly
-  const renderFormattedText = (text) => {
-    if (!text) return null;
-
-    // Split by newlines
-    const lines = text.split('\n');
-    return lines.map((line, idx) => {
-      // Check for bullet points
-      if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-        const bulletContent = line.trim().substring(2);
-        return (
-          <li key={idx} style={{ marginBottom: '6px', lineHeight: '1.5' }}>
-            {parseInlineStyles(bulletContent)}
-          </li>
-        );
-      }
-
-      // Check for headings
-      if (line.startsWith('### ') || line.startsWith('## ')) {
-        const heading = line.replace(/^#+\s*/, '');
-        return (
-          <h4 key={idx} style={{ margin: '14px 0 6px 0', color: '#1B4332', fontSize: '1.05rem', fontWeight: 800 }}>
-            {heading}
-          </h4>
-        );
-      }
-
-      // Normal paragraph
-      if (!line.trim()) {
-        return <div key={idx} style={{ height: '8px' }} />;
-      }
-
-      return (
-        <p key={idx} style={{ margin: '0 0 6px 0', lineHeight: '1.6' }}>
-          {parseInlineStyles(line)}
-        </p>
-      );
-    });
-  };
-
-  const parseInlineStyles = (str) => {
-    // Basic bold **text** parsing
-    const parts = str.split(/(\*\*.*?\*\*)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} style={{ color: '#1B4332' }}>{part.slice(2, -2)}</strong>;
-      }
-      if (part.startsWith('*') && part.endsWith('*')) {
-        return <em key={i}>{part.slice(1, -1)}</em>;
-      }
-      return part;
-    });
-  };
-
   return (
     <div style={{
       background: '#FFFFFF',
@@ -227,7 +174,7 @@ export default function VeterinaryChatbot({ onOpenRescueModal }) {
                 alignItems: 'center',
                 gap: '4px'
               }}>
-                <Sparkles size={11} color="#52B788" /> Gemini 2.5 AI
+                <Sparkles size={11} color="#52B788" /> Gemini 3.6 AI
               </span>
             </div>
             <p style={{ fontSize: '0.82rem', color: '#5C677D', margin: '2px 0 0 0' }}>
@@ -284,7 +231,7 @@ export default function VeterinaryChatbot({ onOpenRescueModal }) {
                 display: 'flex',
                 gap: '12px',
                 alignSelf: isUser ? 'flex-end' : 'flex-start',
-                maxWidth: isUser ? '82%' : '88%',
+                maxWidth: isUser ? '82%' : '90%',
                 flexDirection: isUser ? 'row-reverse' : 'row'
               }}
             >
@@ -310,7 +257,7 @@ export default function VeterinaryChatbot({ onOpenRescueModal }) {
                   ? 'linear-gradient(135deg, #FFE5D9 0%, #FFCAD4 100%)'
                   : '#FFFFFF',
                 color: isUser ? '#4A2E35' : '#2B2D42',
-                padding: '14px 18px',
+                padding: '16px 20px',
                 borderRadius: isUser ? '20px 4px 20px 20px' : '4px 20px 20px 20px',
                 border: isUser ? '1px solid #FFCAD4' : (msg.isEmergency ? '2px solid #E07A5F' : '1px solid #EAEAEA'),
                 boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
@@ -326,7 +273,7 @@ export default function VeterinaryChatbot({ onOpenRescueModal }) {
                     color: '#C92A2A',
                     padding: '8px 12px',
                     borderRadius: '10px',
-                    marginBottom: '10px',
+                    marginBottom: '12px',
                     fontSize: '0.84rem',
                     fontWeight: 700,
                     display: 'flex',
@@ -355,9 +302,35 @@ export default function VeterinaryChatbot({ onOpenRescueModal }) {
                   </div>
                 )}
 
-                {/* Formatted Content */}
-                <div>
-                  {renderFormattedText(msg.text)}
+                {/* Complete Rendered Markdown Content */}
+                <div className="chatbot-markdown-content" style={{ wordBreak: 'break-word' }}>
+                  <ReactMarkdown
+                    components={{
+                      h1: ({ children }) => <h3 style={{ margin: '14px 0 6px 0', color: '#1B4332', fontSize: '1.2rem', fontWeight: 800 }}>{children}</h3>,
+                      h2: ({ children }) => <h4 style={{ margin: '14px 0 6px 0', color: '#1B4332', fontSize: '1.1rem', fontWeight: 800 }}>{children}</h4>,
+                      h3: ({ children }) => <h4 style={{ margin: '14px 0 6px 0', color: '#1B4332', fontSize: '1.05rem', fontWeight: 800 }}>{children}</h4>,
+                      h4: ({ children }) => <h5 style={{ margin: '12px 0 4px 0', color: '#1B4332', fontSize: '0.98rem', fontWeight: 700 }}>{children}</h5>,
+                      p: ({ children }) => <p style={{ margin: '0 0 8px 0', lineHeight: '1.65' }}>{children}</p>,
+                      ul: ({ children }) => <ul style={{ paddingLeft: '20px', margin: '4px 0 10px 0', display: 'flex', flexDirection: 'column', gap: '4px' }}>{children}</ul>,
+                      ol: ({ children }) => <ol style={{ paddingLeft: '20px', margin: '4px 0 10px 0', display: 'flex', flexDirection: 'column', gap: '4px' }}>{children}</ol>,
+                      li: ({ children }) => <li style={{ lineHeight: '1.55', marginBottom: '3px' }}>{children}</li>,
+                      strong: ({ children }) => <strong style={{ color: isUser ? '#4A2E35' : '#1B4332', fontWeight: 700 }}>{children}</strong>,
+                      hr: () => <hr style={{ border: 'none', borderTop: '1px solid #EAEAEA', margin: '12px 0' }} />,
+                      blockquote: ({ children }) => (
+                        <blockquote style={{
+                          borderLeft: '4px solid #74C69D',
+                          paddingLeft: '12px',
+                          margin: '8px 0',
+                          color: '#5C677D',
+                          fontStyle: 'italic'
+                        }}>
+                          {children}
+                        </blockquote>
+                      )
+                    }}
+                  >
+                    {msg.text}
+                  </ReactMarkdown>
                 </div>
 
                 <div style={{

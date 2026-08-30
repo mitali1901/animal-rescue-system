@@ -24,12 +24,12 @@ Important Guidelines:
    - If the user mentions finding an injured or sick stray animal on the street or in public, provide immediate safe handling/first-aid tips and guide them to use PawsCare's "Cure Animals → Cure Injured Animal" feature (/rescue) to submit location details, upload photos, and dispatch volunteer rescue ambulances.
 
 4. Clear Response Formatting:
-   When helpful for health questions, organize your response with clear sections:
-   🩺 What might be happening (educational overview of potential causes)
-   ⚠️ Warning signs (critical symptoms to monitor closely)
-   🏠 Safe home care & first aid (safe supportive steps)
-   🏥 When to see a veterinarian (clear professional escalation criteria)
-   🐾 Important notice (short safety reminder)
+   When helpful for health questions, organize your response with clear sections using Markdown:
+   ### 🩺 What might be happening
+   ### ⚠️ Warning signs
+   ### 🏠 Safe home care & first aid
+   ### 🏥 When to see a veterinarian
+   ### 🐾 Important notice
    (For simple or conversational questions, answer naturally and warmly).
 
 5. Follow-up Questions:
@@ -75,7 +75,7 @@ export async function generateVeterinaryChatResponse(userMessage, history = []) 
     parts: [{ text: userMessage }]
   });
 
-  const modelsToTry = ['gemini-3.6-flash', 'gemini-3.5-flash'];
+  const modelsToTry = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-3-flash-preview'];
   let lastError = null;
 
   for (const model of modelsToTry) {
@@ -86,14 +86,14 @@ export async function generateVeterinaryChatResponse(userMessage, history = []) 
         config: {
           systemInstruction: VETERINARY_SYSTEM_INSTRUCTION,
           temperature: 0.4,
-          maxOutputTokens: 1000
+          maxOutputTokens: 4096
         }
       });
 
       const replyText = response.text || (response.candidates?.[0]?.content?.parts?.[0]?.text) || 'I am here to assist with your pet care questions.';
 
       // Check if emergency keywords triggered for emergency badge
-      const emergencyKeywords = ['emergency vet', 'immediate veterinary', 'emergency animal hospital', 'life-threatening', 'poison control', 'urgent medical attention'];
+      const emergencyKeywords = ['emergency vet', 'immediate veterinary', 'emergency animal hospital', 'life-threatening', 'poison control', 'urgent medical attention', 'immediate medical attention'];
       const isEmergency = emergencyKeywords.some(kw => replyText.toLowerCase().includes(kw));
 
       return {
@@ -103,7 +103,7 @@ export async function generateVeterinaryChatResponse(userMessage, history = []) 
         modelUsed: model
       };
     } catch (err) {
-      console.warn(`Attempt with model ${model} failed:`, err.message);
+      console.warn(`Attempt with model ${model} failed (${err.message}). Trying fallback model...`);
       lastError = err;
     }
   }
