@@ -75,30 +75,39 @@ export async function generateVeterinaryChatResponse(userMessage, history = []) 
     parts: [{ text: userMessage }]
   });
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents,
-      config: {
-        systemInstruction: VETERINARY_SYSTEM_INSTRUCTION,
-        temperature: 0.4,
-        maxOutputTokens: 1000
-      }
-    });
+  const modelsToTry = ['gemini-3.6-flash', 'gemini-3.5-flash'];
+  let lastError = null;
 
-    const replyText = response.text || (response.candidates?.[0]?.content?.parts?.[0]?.text) || 'I am here to assist with your pet care questions.';
+  for (const model of modelsToTry) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents,
+        config: {
+          systemInstruction: VETERINARY_SYSTEM_INSTRUCTION,
+          temperature: 0.4,
+          maxOutputTokens: 1000
+        }
+      });
 
-    // Check if emergency keywords triggered for emergency badge
-    const emergencyKeywords = ['emergency vet', 'immediate veterinary', 'emergency animal hospital', 'life-threatening', 'poison control', 'urgent medical attention'];
-    const isEmergency = emergencyKeywords.some(kw => replyText.toLowerCase().includes(kw));
+      const replyText = response.text || (response.candidates?.[0]?.content?.parts?.[0]?.text) || 'I am here to assist with your pet care questions.';
 
-    return {
-      success: true,
-      reply: replyText,
-      isEmergency
-    };
-  } catch (err) {
-    console.error('❌ Gemini API Error:', err);
-    throw new Error(err.message || 'Failed to generate response from Gemini API.');
+      // Check if emergency keywords triggered for emergency badge
+      const emergencyKeywords = ['emergency vet', 'immediate veterinary', 'emergency animal hospital', 'life-threatening', 'poison control', 'urgent medical attention'];
+      const isEmergency = emergencyKeywords.some(kw => replyText.toLowerCase().includes(kw));
+
+      return {
+        success: true,
+        reply: replyText,
+        isEmergency,
+        modelUsed: model
+      };
+    } catch (err) {
+      console.warn(`Attempt with model ${model} failed:`, err.message);
+      lastError = err;
+    }
   }
+
+  console.error('❌ All Gemini model attempts failed:', lastError);
+  throw new Error(lastError ? lastError.message : 'Failed to generate response from Gemini API.');
 }
