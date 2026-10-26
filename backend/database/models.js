@@ -46,6 +46,7 @@ const AdoptionPetSchema = new mongoose.Schema({
   vaccinated: { type: Boolean, default: false },
   neutered: { type: Boolean, default: false },
   urgency: { type: String, default: 'Normal' },
+  category: { type: String, default: '' },
   location: { type: String, default: '' },
   description: { type: String, default: '' },
   imageUrl: { type: String, default: '' },
