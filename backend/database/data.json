@@ -246,7 +246,7 @@
       "urgency": "Normal",
       "location": "Feathered Friends Rescue",
       "description": "Sunny is a cheerful hand-tame Cockatiel who whistles happy tunes and bows for gentle head scratches. Loves seeds and gentle company.",
-      "imageUrl": "https://images.unsplash.com/photo-1591154669695-5f2a8d20c089?auto=format&fit=crop&w=600&q=80",
+      "imageUrl": "/images/birds/cockatiel.jpg",
       "tags": [
         "Whistler",
         "Hand-Tame",
@@ -269,7 +269,7 @@
       "urgency": "Urgent Foster",
       "location": "Tropical Wings Sanctuary",
       "description": "Rio is a magnificent, highly intelligent Scarlet Macaw who knows 15+ words and phrases. Looking for an experienced bird lover with ample space.",
-      "imageUrl": "https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=600&q=80",
+      "imageUrl": "/images/birds/macaw.jpg",
       "tags": [
         "Vocal Talker",
         "Intelligent",
@@ -292,7 +292,7 @@
       "urgency": "Normal",
       "location": "Sunny Meadow Avian Haven",
       "description": "Inseparable cheerful budgie pair with vibrant turquoise and emerald plumage! They chirp melodies, eat greens, and are beginner-friendly.",
-      "imageUrl": "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=600&q=80",
+      "imageUrl": "/images/birds/budgies.jpg",
       "tags": [
         "Bonded Pair",
         "Beginner Friendly",
@@ -315,7 +315,7 @@
       "urgency": "Urgent Foster",
       "location": "Small Wings Sanctuary",
       "description": "Deeply bonded peach-faced lovebird pair who groom each other constantly. Very active and curious, they love climbing and foraging toys.",
-      "imageUrl": "https://images.unsplash.com/photo-1579273166152-d725a4e2b755?auto=format&fit=crop&w=600&q=80",
+      "imageUrl": "/images/birds/lovebirds.jpg",
       "tags": [
         "Bonded Pair",
         "Cuddle Bugs",
@@ -338,7 +338,7 @@
       "urgency": "Normal",
       "location": "Haven Avian Sanctuary",
       "description": "Casper is an energetic, affectionate white Cockatoo who dances to music, bobs his head, and raises his golden crest when happy. Loves interactive attention.",
-      "imageUrl": "https://images.unsplash.com/photo-1606567595334-d39972c85dbe?auto=format&fit=crop&w=600&q=80",
+      "imageUrl": "/images/birds/cockatoo.jpg",
       "tags": [
         "Dancer",
         "Loves Music",
@@ -361,7 +361,7 @@
       "urgency": "Normal",
       "location": "City Songbird Rescue",
       "description": "Chirpy has a bright golden coat and fills the room with melodic, soothing songs every sunrise. Independent, gentle, and perfect for peaceful apartment living.",
-      "imageUrl": "https://images.unsplash.com/photo-1596727147705-61a532a659bd?auto=format&fit=crop&w=600&q=80",
+      "imageUrl": "/images/birds/canary.jpg",
       "tags": [
         "Melodic Singer",
         "Calm",
@@ -384,7 +384,7 @@
       "urgency": "Normal",
       "location": "Avian Care Center",
       "description": "Skye is a dazzling, colorful acrobat with a huge personality! She loves hanging upside down, playing with bells, and splashing in shallow bird baths.",
-      "imageUrl": "https://images.unsplash.com/photo-1552728089-57bdde30beb3?auto=format&fit=crop&w=600&q=80",
+      "imageUrl": "/images/birds/lorikeet.jpg",
       "tags": [
         "Acrobatic",
         "Colorful",
