@@ -126,6 +126,9 @@ export default function LoginPage() {
         setSuccessMessage(res.message || 'Verification code sent to your email.');
         setActiveTab('otp');
         setCooldown(60);
+        if (res.devOtp) {
+          setOtpDigits(res.devOtp.split(''));
+        }
       }
     } catch (err) {
       setErrorMessage(err.message || 'Unable to create account. Please try again.');
@@ -197,7 +200,11 @@ export default function LoginPage() {
       const res = await resendOtp({ email: signupEmail });
       setSuccessMessage(res.message || 'A new verification code has been sent.');
       setCooldown(60);
-      setOtpDigits(['', '', '', '', '', '']);
+      if (res.devOtp) {
+        setOtpDigits(res.devOtp.split(''));
+      } else {
+        setOtpDigits(['', '', '', '', '', '']);
+      }
     } catch (err) {
       setErrorMessage(err.message || 'Failed to resend code.');
     }

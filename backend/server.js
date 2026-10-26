@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
-import { initDb } from './database/db.js';
+import dotenv from 'dotenv';
+import { initDb, readDb } from './database/db.js';
+import { connectMongoDB, syncDataToMongo, getMongoStatus } from './database/mongodb.js';
 import rescueRoutes from './routes/rescue.js';
 import adoptionRoutes from './routes/adoption.js';
 import adoptRoutes from './routes/adopt.js';
@@ -10,11 +12,19 @@ import usersRoutes from './routes/users.js';
 import chatbotRoutes from './routes/chatbot.js';
 import authRoutes from './routes/auth.js';
 
-const app = express();
-const PORT = process.env.PORT || 5000;
+dotenv.config();
 
-// Initialize Database JSON store
+const app = express();
+const PORT = process.env.PORT || 5001;
+
+// Initialize Database JSON store & Connect to MongoDB
 initDb();
+connectMongoDB().then(connected => {
+  if (connected) {
+    const data = readDb();
+    syncDataToMongo(data);
+  }
+});
 
 // Middlewares
 app.use(cors());
@@ -34,6 +44,14 @@ app.use('/api/users', usersRoutes);
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Animal Rescue System Backend API is running smoothly' });
+});
+
+// Database status endpoint
+app.get('/api/db-status', (req, res) => {
+  res.json({
+    status: 'ok',
+    mongo: getMongoStatus()
+  });
 });
 
 app.listen(PORT, () => {

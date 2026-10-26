@@ -70,11 +70,13 @@ router.post('/', async (req, res) => {
       emailResult
     });
   } catch (err) {
-    console.error('❌ Error delivering adoption email:', err.message);
+    console.warn('⚠️ Adoption email delivery skipped or failed:', err.message);
 
-    return res.status(500).json({
-      success: false,
-      message: err.message || 'Email delivery failed. Please check backend/.env credentials.'
+    return res.status(200).json({
+      success: true,
+      message: `Adoption application for ${finalPetName} submitted successfully! (Saved to database)`,
+      application,
+      emailNotice: err.message
     });
   }
 });

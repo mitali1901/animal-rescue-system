@@ -699,7 +699,19 @@
       "status": "Pending Review"
     }
   ],
-  "consultationRequests": [],
+  "consultationRequests": [
+    {
+      "id": "consult-1793036530567",
+      "petOwnerName": "Tanmay",
+      "petName": "Max",
+      "animalType": "Dog",
+      "symptomDescription": "my dog is vomiting",
+      "preferredTime": "As soon as possible",
+      "phone": "1234567890",
+      "createdAt": "2026-10-26T17:42:10.567Z",
+      "status": "Assigned to Vet"
+    }
+  ],
   "users": [
     {
       "id": "user-1788117685694",
@@ -709,6 +721,15 @@
       "role": "member",
       "isVerified": true,
       "createdAt": "2026-08-30T19:21:25.694Z"
+    },
+    {
+      "id": "user-1793032831943",
+      "fullName": "Tanmay",
+      "email": "tanmay123@gmail.com",
+      "password": "$2b$10$CgYwmJbF3tOqQ48RlLMamuEXqP2gdAwVqCxeVrWKE7D9AWHrHsbfy",
+      "role": "member",
+      "isVerified": true,
+      "createdAt": "2026-10-26T16:40:31.943Z"
     }
   ]
 }

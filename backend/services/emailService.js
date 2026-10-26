@@ -142,72 +142,77 @@ export async function sendVerificationOtpEmail(email, fullName, otp) {
  * @param {string} fullName
  */
 export async function sendWelcomeEmail(email, fullName) {
-  const mailer = await getTransporter();
-  const senderEmail = process.env.EMAIL_USER || 'welcome@pawsrescue.org';
-  const subject = `Welcome to PawsCare! 🐾`;
+  try {
+    const mailer = await getTransporter();
+    const senderEmail = process.env.EMAIL_USER || 'welcome@pawsrescue.org';
+    const subject = `Welcome to PawsCare! 🐾`;
 
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #FAF6F0; margin: 0; padding: 24px; color: #2B2D42; }
-        .card { background: #FFFFFF; max-width: 560px; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.08); border: 2px solid #B7E4C7; }
-        .header { background: linear-gradient(135deg, #D8F3DC 0%, #B7E4C7 100%); padding: 32px 24px; text-align: center; }
-        .header h1 { margin: 0; color: #1B4332; font-size: 26px; font-weight: 800; }
-        .content { padding: 28px 24px; }
-        .welcome-box { background: #FAF6F0; border-left: 4px solid #52B788; padding: 18px; border-radius: 12px; margin: 18px 0; }
-        .footer { background: #FAF6F0; padding: 18px; text-align: center; font-size: 12px; color: #8D99AE; border-top: 1px solid #EAEAEA; }
-      </style>
-    </head>
-    <body>
-      <div class="card">
-        <div class="header">
-          <div style="font-size: 40px; margin-bottom: 6px;">🐾</div>
-          <h1>Welcome to PawsCare!</h1>
-          <p style="margin: 4px 0 0 0; color: #2D6A4F; font-weight: 600;">Rescue • Adopt • Heal</p>
-        </div>
-        <div class="content">
-          <p style="font-size: 16px; margin: 0 0 12px 0;">Hi <strong>${fullName}</strong>,</p>
-          
-          <div class="welcome-box">
-            <p style="margin: 0 0 10px 0; font-size: 15px; color: #1B4332; font-weight: 700;">
-              Thank you for creating your PawsCare account! 🐾
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #FAF6F0; margin: 0; padding: 24px; color: #2B2D42; }
+          .card { background: #FFFFFF; max-width: 560px; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.08); border: 2px solid #B7E4C7; }
+          .header { background: linear-gradient(135deg, #D8F3DC 0%, #B7E4C7 100%); padding: 32px 24px; text-align: center; }
+          .header h1 { margin: 0; color: #1B4332; font-size: 26px; font-weight: 800; }
+          .content { padding: 28px 24px; }
+          .welcome-box { background: #FAF6F0; border-left: 4px solid #52B788; padding: 18px; border-radius: 12px; margin: 18px 0; }
+          .footer { background: #FAF6F0; padding: 18px; text-align: center; font-size: 12px; color: #8D99AE; border-top: 1px solid #EAEAEA; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="header">
+            <div style="font-size: 40px; margin-bottom: 6px;">🐾</div>
+            <h1>Welcome to PawsCare!</h1>
+            <p style="margin: 4px 0 0 0; color: #2D6A4F; font-weight: 600;">Rescue • Adopt • Heal</p>
+          </div>
+          <div class="content">
+            <p style="font-size: 16px; margin: 0 0 12px 0;">Hi <strong>${fullName}</strong>,</p>
+            
+            <div class="welcome-box">
+              <p style="margin: 0 0 10px 0; font-size: 15px; color: #1B4332; font-weight: 700;">
+                Thank you for creating your PawsCare account! 🐾
+              </p>
+              <p style="margin: 0 0 10px 0; font-size: 14px; color: #2B2D42; line-height: 1.6;">
+                Your account has been successfully created and verified. We're happy to have you join PawsCare and our mission to help animals.
+              </p>
+              <p style="margin: 0; font-size: 14px; color: #2D6A4F; font-weight: 700;">
+                Welcome to the PawsCare family! ❤️
+              </p>
+            </div>
+
+            <p style="font-size: 14px; color: #5C677D; line-height: 1.6;">
+              You now have full access to adopt loving pets, report and track injured street rescues, chat with our AI Veterinary Assistant, and access certified pet first-aid guides.
             </p>
-            <p style="margin: 0 0 10px 0; font-size: 14px; color: #2B2D42; line-height: 1.6;">
-              Your account has been successfully created and verified. We're happy to have you join PawsCare and our mission to help animals.
-            </p>
-            <p style="margin: 0; font-size: 14px; color: #2D6A4F; font-weight: 700;">
-              Welcome to the PawsCare family! ❤️
+
+            <p style="font-size: 14px; color: #2B2D42; margin-top: 20px;">
+              — <strong>PawsCare Team 🐾</strong>
             </p>
           </div>
-
-          <p style="font-size: 14px; color: #5C677D; line-height: 1.6;">
-            You now have full access to adopt loving pets, report and track injured street rescues, chat with our AI Veterinary Assistant, and access certified pet first-aid guides.
-          </p>
-
-          <p style="font-size: 14px; color: #2B2D42; margin-top: 20px;">
-            — <strong>PawsCare Team 🐾</strong>
-          </p>
+          <div class="footer">
+            Sent with care to ${email} by PawsCare Animal Rescue Portal.
+          </div>
         </div>
-        <div class="footer">
-          Sent with care to ${email} by PawsCare Animal Rescue Portal.
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
+      </body>
+      </html>
+    `;
 
-  const info = await mailer.sendMail({
-    from: `"PawsCare Team" <${senderEmail}>`,
-    to: email,
-    subject,
-    html: htmlContent
-  });
+    const info = await mailer.sendMail({
+      from: `"PawsCare Team" <${senderEmail}>`,
+      to: email,
+      subject,
+      html: htmlContent
+    });
 
-  console.log(`✉️ Welcome email sent to ${email}. MessageId: ${info.messageId}`);
-  return { success: true, messageId: info.messageId };
+    console.log(`✉️ Welcome email sent to ${email}. MessageId: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (err) {
+    console.warn(`Welcome email warning: ${err.message}`);
+    return { success: false, note: err.message };
+  }
 }
 
 /**
@@ -217,67 +222,72 @@ export async function sendWelcomeEmail(email, fullName) {
  * @param {string} loginTime
  */
 export async function sendLoginNotificationEmail(email, fullName, loginTime) {
-  const mailer = await getTransporter();
-  const senderEmail = process.env.EMAIL_USER || 'security@pawsrescue.org';
-  const subject = `New Login to Your PawsCare Account 🐾`;
+  try {
+    const mailer = await getTransporter();
+    const senderEmail = process.env.EMAIL_USER || 'security@pawsrescue.org';
+    const subject = `New Login to Your PawsCare Account 🐾`;
 
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #FAF6F0; margin: 0; padding: 24px; color: #2B2D42; }
-        .card { background: #FFFFFF; max-width: 540px; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.08); border: 2px solid #E8DEF8; }
-        .header { background: linear-gradient(135deg, #F3E8FF 0%, #E8DEF8 100%); padding: 28px 24px; text-align: center; }
-        .header h1 { margin: 0; color: #3B1C54; font-size: 22px; font-weight: 800; }
-        .content { padding: 28px 24px; }
-        .alert-box { background: #FAF6F0; border-left: 4px solid #9D4EDD; padding: 14px 18px; border-radius: 12px; margin: 16px 0; font-size: 14px; line-height: 1.6; }
-        .footer { background: #FAF6F0; padding: 16px; text-align: center; font-size: 12px; color: #8D99AE; border-top: 1px solid #EAEAEA; }
-      </style>
-    </head>
-    <body>
-      <div class="card">
-        <div class="header">
-          <div style="font-size: 34px; margin-bottom: 6px;">🔐</div>
-          <h1>New Login Detected</h1>
-        </div>
-        <div class="content">
-          <p style="font-size: 15px; margin: 0 0 10px 0;">Hi <strong>${fullName}</strong>,</p>
-          <p style="font-size: 14px; color: #5C677D; margin: 0 0 14px 0;">
-            You have successfully logged in to your PawsCare account.
-          </p>
-
-          <div class="alert-box">
-            <div>🗓️ <strong>Login Time:</strong> ${loginTime || new Date().toLocaleString()}</div>
-            <div style="margin-top: 4px;">✉️ <strong>Account:</strong> ${email}</div>
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #FAF6F0; margin: 0; padding: 24px; color: #2B2D42; }
+          .card { background: #FFFFFF; max-width: 540px; margin: 0 auto; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.08); border: 2px solid #E8DEF8; }
+          .header { background: linear-gradient(135deg, #F3E8FF 0%, #E8DEF8 100%); padding: 28px 24px; text-align: center; }
+          .header h1 { margin: 0; color: #3B1C54; font-size: 22px; font-weight: 800; }
+          .content { padding: 28px 24px; }
+          .alert-box { background: #FAF6F0; border-left: 4px solid #9D4EDD; padding: 14px 18px; border-radius: 12px; margin: 16px 0; font-size: 14px; line-height: 1.6; }
+          .footer { background: #FAF6F0; padding: 16px; text-align: center; font-size: 12px; color: #8D99AE; border-top: 1px solid #EAEAEA; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="header">
+            <div style="font-size: 34px; margin-bottom: 6px;">🔐</div>
+            <h1>New Login Detected</h1>
           </div>
+          <div class="content">
+            <p style="font-size: 15px; margin: 0 0 10px 0;">Hi <strong>${fullName}</strong>,</p>
+            <p style="font-size: 14px; color: #5C677D; margin: 0 0 14px 0;">
+              You have successfully logged in to your PawsCare account.
+            </p>
 
-          <p style="font-size: 13px; color: #5C677D; margin: 16px 0 0 0;">
-            If this was you, no action is needed. If you did not log in, please secure your account immediately.
-          </p>
+            <div class="alert-box">
+              <div>🗓️ <strong>Login Time:</strong> ${loginTime || new Date().toLocaleString()}</div>
+              <div style="margin-top: 4px;">✉️ <strong>Account:</strong> ${email}</div>
+            </div>
 
-          <p style="font-size: 14px; color: #2B2D42; margin-top: 18px;">
-            — <strong>PawsCare Team 🐾</strong>
-          </p>
+            <p style="font-size: 13px; color: #5C677D; margin: 16px 0 0 0;">
+              If this was you, no action is needed. If you did not log in, please secure your account immediately.
+            </p>
+
+            <p style="font-size: 14px; color: #2B2D42; margin-top: 18px;">
+              — <strong>PawsCare Team 🐾</strong>
+            </p>
+          </div>
+          <div class="footer">
+            PawsCare Security Notifications • Protecting Animal Lovers
+          </div>
         </div>
-        <div class="footer">
-          PawsCare Security Notifications • Protecting Animal Lovers
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
+      </body>
+      </html>
+    `;
 
-  const info = await mailer.sendMail({
-    from: `"PawsCare Security" <${senderEmail}>`,
-    to: email,
-    subject,
-    html: htmlContent
-  });
+    const info = await mailer.sendMail({
+      from: `"PawsCare Security" <${senderEmail}>`,
+      to: email,
+      subject,
+      html: htmlContent
+    });
 
-  console.log(`✉️ Login security alert sent to ${email}. MessageId: ${info.messageId}`);
-  return { success: true, messageId: info.messageId };
+    console.log(`✉️ Login security alert sent to ${email}. MessageId: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (err) {
+    console.warn(`Login notification email warning: ${err.message}`);
+    return { success: false, note: err.message };
+  }
 }
 
 /**
@@ -424,32 +434,32 @@ export const sendAdoptionApplicationEmail = sendAdoptionRequestEmail;
  * Send Rescue Report Email
  */
 export async function sendRescueReportEmail(report) {
-  const mailer = await getTransporter();
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@animalrescue.org';
-  const senderEmail = process.env.EMAIL_USER && process.env.EMAIL_USER !== 'your_email@gmail.com'
-    ? process.env.EMAIL_USER
-    : (process.env.SMTP_FROM || 'alerts@pawsrescue.org');
-
-  const subject = `🚨 [NEW INJURED ANIMAL REPORT] ${report.animalType} — ${report.title} (#${report.id})`;
-
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-    <body style="font-family: Arial; padding: 20px; background: #FAF6F0;">
-      <div style="background: #FFF; padding: 24px; border-radius: 16px; max-width: 550px; margin: auto; border: 2px solid #FFCAD4;">
-        <h2 style="color: #7A3B2E;">🐾 Injured Animal Report (#${report.id})</h2>
-        <p><strong>Type:</strong> ${report.animalType} (${report.breed || 'Unknown'})</p>
-        <p><strong>Severity:</strong> ${report.severity}</p>
-        <p><strong>Summary:</strong> ${report.title}</p>
-        <p><strong>Location:</strong> ${report.locationName}</p>
-        <p><strong>Description:</strong> ${report.description}</p>
-        <p><strong>Reporter:</strong> ${report.reporterName || 'Anonymous'} (${report.contactPhone || 'No Phone'}, ${report.reporterEmail || 'No Email'})</p>
-      </div>
-    </body>
-    </html>
-  `;
-
   try {
+    const mailer = await getTransporter();
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@animalrescue.org';
+    const senderEmail = process.env.EMAIL_USER && process.env.EMAIL_USER !== 'your_email@gmail.com'
+      ? process.env.EMAIL_USER
+      : (process.env.SMTP_FROM || 'alerts@pawsrescue.org');
+
+    const subject = `🚨 [NEW INJURED ANIMAL REPORT] ${report.animalType} — ${report.title} (#${report.id})`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <body style="font-family: Arial; padding: 20px; background: #FAF6F0;">
+        <div style="background: #FFF; padding: 24px; border-radius: 16px; max-width: 550px; margin: auto; border: 2px solid #FFCAD4;">
+          <h2 style="color: #7A3B2E;">🐾 Injured Animal Report (#${report.id})</h2>
+          <p><strong>Type:</strong> ${report.animalType} (${report.breed || 'Unknown'})</p>
+          <p><strong>Severity:</strong> ${report.severity}</p>
+          <p><strong>Summary:</strong> ${report.title}</p>
+          <p><strong>Location:</strong> ${report.locationName}</p>
+          <p><strong>Description:</strong> ${report.description}</p>
+          <p><strong>Reporter:</strong> ${report.reporterName || 'Anonymous'} (${report.contactPhone || 'No Phone'}, ${report.reporterEmail || 'No Email'})</p>
+        </div>
+      </body>
+      </html>
+    `;
+
     const info = await mailer.sendMail({
       from: `"PawsCare Rescue Alert" <${senderEmail}>`,
       to: adminEmail,
@@ -458,7 +468,7 @@ export async function sendRescueReportEmail(report) {
     });
     return { success: true, messageId: info.messageId };
   } catch (err) {
-    console.warn(`Email send error: ${err.message}`);
+    console.warn(`Email send warning: ${err.message}`);
     return { success: false, note: err.message };
   }
 }
