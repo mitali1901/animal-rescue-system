@@ -149,3 +149,16 @@ Contributions, issues, and feature requests are welcome! Feel free to open an is
 ## 📄 License
 
 This project is licensed under the MIT License.
+
+---
+
+## 👥 Project Team
+
+**PawsCare — Animal Rescue & Pet Healing System** was developed collaboratively by:
+
+* **Lavanya Mahajan**
+* **Tanmay Khosla**
+* **Mitali Gupta**
+
+Our team worked together to develop a technology-driven platform dedicated to animal rescue, pet adoption, and veterinary care, aiming to make animal welfare services more accessible and efficient.
+
