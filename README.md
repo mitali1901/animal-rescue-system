@@ -1,6 +1,6 @@
 # 🐾 PawsCare — Animal Rescue & Pet Healing System
 
-A modern, full-stack animal welfare, adoption, and medical rescue platform built with **React**, **Node.js**, **Express**, **MongoDB Atlas (Mongoose)**, and a custom pastel UI design system.
+A modern, full-stack animal welfare, adoption, and medical rescue platform built with React, Node.js, Express, MongoDB Atlas (Mongoose), and a custom pastel UI design system.PawsCare aims to connect animal lovers, pet adopters, and rescue volunteers through an accessible platform that promotes animal welfare and supports timely medical assistance for animals in need.
 
 ---
 
